@@ -19,8 +19,28 @@ void myfree(void *ptr)
 
 int mystrlen(const char *str)
 {
-    int size = strlen (str);
-    printf("size: %d\n", size);
+    int size = 0;
+
+    asm(".intel_syntax noprefix\n\t"
+        "xor ebx, ebx\n\t"
+        "mov rax, %1\n\t"    
+        "inc ebx\n\t"
+        "next:\n\t"  
+        "cmp byte [rax], bh\n\t" 
+        "je ending\n\t"
+        "inc ebx\n\t"
+        "inc rax\n\t"
+        "jmp next\n\t"
+        "ending:\n\t"
+        "inc ebx\n\t"
+        "inc rax\n\t"
+        "mov %0, ebx\n\t"
+        ".ATT_syntax prefix\n\t"
+        :"=r"(size) 
+        :"r"(str)
+        : "rax", "ebx"
+    );
+
     return size;
 }
 

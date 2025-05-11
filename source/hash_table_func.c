@@ -1,23 +1,9 @@
 #include "hash_table_func.h"
+extern int hash_word (const char *word);
 
-int hash_word (const char *word)
+struct Node *node_ctor()
 {
-    assert (word);
-
-    size_t word_size = strlen (word);
-    int hash = 0;
-
-    for (size_t symbol = 0; symbol < word_size; symbol++)
-    {
-        hash += (int)word[symbol];
-    }
-
-    return (hash % HASH_TABLE_SIZE);
-}
-
-Node *node_ctor()
-{
-    Node *node = (Node *)calloc (1, sizeof (Node));
+    struct Node *node = (struct Node *)calloc (1, sizeof (struct Node));
     if (!node)
     {
         return NULL;
@@ -29,18 +15,20 @@ Node *node_ctor()
         return NULL;
     }
 
+    node->amount = 0;
+
     return node;
 }
 
-void node_dtor (Node *node)
+void node_dtor (struct Node *node)
 {
     assert (node);
     free (node);
 }
 
-Node **hash_table_ctor ()
+struct Node **hash_table_ctor ()
 {
-    Node **hash_table = (Node **)calloc (HASH_TABLE_SIZE, sizeof (Node *));
+    struct Node **hash_table = (struct Node **)calloc (HASH_TABLE_SIZE, sizeof (struct Node *));
     if (!hash_table)
     {
         return NULL;
@@ -54,7 +42,7 @@ Node **hash_table_ctor ()
     return hash_table;
 }
 
-void hash_table_dtor (Node **hash_table)
+void hash_table_dtor (struct Node **hash_table)
 {
     assert (hash_table);
 
@@ -80,30 +68,13 @@ int word_counter (const char *buffer, int buffer_size)
     return words_amount;
 }
 
-void fill_hash_table (Node **hash_table, const char *formatted_text)
+void fill_hash_table (struct Node **hash_table, const char *formatted_text)
 {
     assert (hash_table);
     assert (formatted_text);
 
-    FILE *formatted_file = fopen (formatted_text, "r");
-    if (!formatted_file)
-    {
-        return;
-    }
-
-    fseek (formatted_file, 0, SEEK_END);
-    size_t text_size = ftell (formatted_file);
-    fseek (formatted_file, 0, SEEK_SET);
-
-    char *buffer = (char *)calloc (text_size, sizeof (char));
-    if (!buffer)
-    {
-        fclose (formatted_file);
-        return;
-    }
-
-    fread (buffer, sizeof (char), text_size, formatted_file);
-    fclose (formatted_file);                                     // вот это и в еще одном месте наверное в функцию надо
+    char *buffer = read_file (formatted_text);
+    int text_size = strlen (buffer);
 
     int words_amount = word_counter (buffer, text_size);
     char *word = (char *)calloc (WORD_MAX_SIZE, sizeof (char));
@@ -137,18 +108,20 @@ void fill_hash_table (Node **hash_table, const char *formatted_text)
     
 }
 
-void hash_table_check_element (const char *word, Node **hash_table)
+void hash_table_check_element (const char *word, struct Node **hash_table)
 {
     int block_number = hash_word (word);
-
     if (hash_table[block_number]->amount == 0)
     {
         hash_table_add_element (word, hash_table[block_number]);
-        hash_table_find_element (word, hash_table);
+        for (int cycle = 0; cycle < CHECK_AMOUNT; cycle++)
+        {
+            hash_table_find_element (word, hash_table);
+        }
         return;
     } 
 
-    Node *current_node = hash_table[block_number];
+    struct Node *current_node = hash_table[block_number];
     while (strcmp (word, current_node->value) != 0)
     {
         if (current_node->next == NULL)
@@ -167,21 +140,25 @@ void hash_table_check_element (const char *word, Node **hash_table)
         (current_node->amount)++;
     }
 
-    hash_table_find_element (word, hash_table);
+    for (int cycle = 0; cycle < CHECK_AMOUNT; cycle++)
+    {
+        hash_table_find_element (word, hash_table);
+    }
 }
 
-void hash_table_add_element (const char *word, Node *node)
+void hash_table_add_element (const char *word, struct Node *node)
 {
     int word_size = strlen (word); 
+    printf ("%p\n", node->value);
     memcpy (node->value, word, word_size);
     (node->amount)++;
     return;
 }
 
-void hash_table_find_element (const char *word, Node **hash_table)
+void hash_table_find_element (const char *word, struct Node **hash_table)
 {
     int block_number = hash_word (word);
-    Node *current_node = hash_table[block_number];
+    struct Node *current_node = hash_table[block_number];
 
     while (strcmp (word, current_node->value) != 0)
     {

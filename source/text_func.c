@@ -1,30 +1,39 @@
 #include "text_func.h"
 
-FILE *text_format (const char *text)
+char *read_file (const char *text_file)
 {
-    assert (text);
+    assert (text_file);
 
-    FILE *original_text = fopen (text, "r");
-    if (!original_text)
+    FILE *text = fopen (text_file, "r");
+    if (!text)
     {
         return NULL;
     }
 
-    fseek (original_text, 0, SEEK_END);
-    size_t text_size = ftell (original_text);
-    fseek (original_text, 0, SEEK_SET);
+    fseek (text, 0, SEEK_END);
+    size_t text_size = ftell (text);
+    fseek (text, 0, SEEK_SET);
 
     char *buffer = (char *)calloc (text_size + 1, sizeof (char));
     if (!buffer)
     {
-        fclose (original_text);
+        fclose (text);
         return NULL;
     }
 
-    fread (buffer, sizeof (char), text_size, original_text);
+    fread (buffer, sizeof (char), text_size, text);
     buffer[text_size] = '\n';
-    fclose (original_text);
+    fclose (text);
 
+    return buffer;
+}
+
+FILE *text_format (const char *text)
+{
+    assert (text);
+
+    char *buffer = read_file (text);
+    int text_size = strlen (buffer);
     put_each_word_in_buffer_on_separate_line (buffer, text_size);
 
     FILE *formatted_text = fopen ("formatted_text.txt", "wa");

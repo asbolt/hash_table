@@ -1,15 +1,17 @@
-CC = g++
-FLAGS ?= -I./include
+CC = gcc
+FLAGS ?= -O2 -mavx2 -pg -I./include 
 
-CSRC = text_func.cpp hash_table_func.cpp main.cpp 
-COBJ = $(CSRC:%.cpp=./build/%.o)
+CSRC = ./source/text_func.c ./source/hash_table_func.c ./source/main.c
 
 .PHONY: all
-all: $(COBJ)
-	$(CC) $(FLAGS) $(COBJ) -o hash_table
+all: ./build/mymalloc.o ./build/my_hash.o
+	$(CC) $(FLAGS) -no-pie -z noexecstack $(CSRC) ./build/my_hash.o ./build/mymalloc.o -o hash_table
 
-./build/%.o: source/%.cpp
-	$(CC) $(FLAGS) -c $^ -o $@
+./build/mymalloc.o:
+	$(CC) -mavx2 -DCOMPILETIME -o ./build/mymalloc.o -c ./source/mymalloc.c
+
+./build/my_hash.o:
+	nasm -felf64 ./source/my_hash.asm -o ./build/my_hash.o
 
 .PHONY: clean
 clean:
